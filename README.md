@@ -11,9 +11,9 @@ Visit the tools at: [https://YOUR_USERNAME.github.io/tools/](https://YOUR_USERNA
 - **Word Counter** - Count words, characters, and lines in text
 - **JSON Formatter** - Format, validate, and minify JSON data
 - **Base64 Encoder/Decoder** - Encode and decode Base64 strings and files
+- **Dictionary Formatter** - Format and prettify Python dictionaries for better readability
 - **URL Encoder/Decoder** - Encode and decode URL components
-- **Color Converter** - Convert between different color formats
-- **Timestamp Converter** - Convert between timestamps and human-readable dates
+- **Timezone Converter** - Convert times between timezones with defaults to current/EST → UTC
 
 ## Features
 

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Encoder/Decoder - Web Tools</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .tool-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .tool-header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-area {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .converter-section {
+            margin-bottom: 2rem;
+        }
+        
+        .converter-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .encoding-type {
+            margin-bottom: 1rem;
+        }
+        
+        .encoding-type label {
+            display: inline-block;
+            margin-right: 1rem;
+            font-weight: bold;
+        }
+        
+        .encoding-type input[type="radio"] {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-container">
+        <a href="../index.html" class="back-link">← Back to Tools</a>
+        
+        <div class="tool-header">
+            <h1>URL Encoder/Decoder</h1>
+            <p>Encode and decode URL components</p>
+        </div>
+        
+        <div class="tool-area">
+            <div class="error" id="errorMessage"></div>
+            
+            <div class="converter-section">
+                <h3>Text to URL Encoded</h3>
+                <div class="encoding-type">
+                    <label><input type="radio" name="encodeType" value="component" checked> Component (default)</label>
+                    <label><input type="radio" name="encodeType" value="uri"> Full URI</label>
+                </div>
+                <textarea id="textInput" placeholder="Enter text to encode..."></textarea>
+                <div class="controls">
+                    <button onclick="encodeText()">Encode URL</button>
+                    <button onclick="clearText()">Clear</button>
+                </div>
+                <textarea id="urlOutput" readonly placeholder="URL encoded result will appear here..."></textarea>
+            </div>
+            
+            <div class="converter-section">
+                <h3>URL Encoded to Text</h3>
+                <div class="encoding-type">
+                    <label><input type="radio" name="decodeType" value="component" checked> Component (default)</label>
+                    <label><input type="radio" name="decodeType" value="uri"> Full URI</label>
+                </div>
+                <textarea id="urlInput" placeholder="Enter URL encoded string to decode..."></textarea>
+                <div class="controls">
+                    <button onclick="decodeURL()">Decode URL</button>
+                    <button onclick="clearURL()">Clear</button>
+                </div>
+                <textarea id="textOutput" readonly placeholder="Decoded text will appear here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const urlOutput = document.getElementById('urlOutput');
+        const urlInput = document.getElementById('urlInput');
+        const textOutput = document.getElementById('textOutput');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function getEncodeType() {
+            return document.querySelector('input[name="encodeType"]:checked').value;
+        }
+
+        function getDecodeType() {
+            return document.querySelector('input[name="decodeType"]:checked').value;
+        }
+
+        function encodeText() {
+            hideError();
+            try {
+                const text = textInput.value;
+                if (!text) {
+                    showError('Please enter text to encode');
+                    return;
+                }
+                
+                const encodeType = getEncodeType();
+                let encoded;
+                
+                if (encodeType === 'component') {
+                    encoded = encodeURIComponent(text);
+                } else {
+                    encoded = encodeURI(text);
+                }
+                
+                urlOutput.value = encoded;
+            } catch (e) {
+                showError('Error encoding text: ' + e.message);
+            }
+        }
+
+        function decodeURL() {
+            hideError();
+            try {
+                const url = urlInput.value.trim();
+                if (!url) {
+                    showError('Please enter URL encoded string to decode');
+                    return;
+                }
+                
+                const decodeType = getDecodeType();
+                let decoded;
+                
+                if (decodeType === 'component') {
+                    decoded = decodeURIComponent(url);
+                } else {
+                    decoded = decodeURI(url);
+                }
+                
+                textOutput.value = decoded;
+            } catch (e) {
+                showError('Error decoding URL: Invalid URL encoded string');
+            }
+        }
+
+        function clearText() {
+            textInput.value = '';
+            urlOutput.value = '';
+            hideError();
+        }
+
+        function clearURL() {
+            urlInput.value = '';
+            textOutput.value = '';
+            hideError();
+        }
+
+        // Auto-encode/decode on input
+        textInput.addEventListener('input', function() {
+            if (textInput.value) {
+                encodeText();
+            } else {
+                urlOutput.value = '';
+                hideError();
+            }
+        });
+
+        urlInput.addEventListener('input', function() {
+            if (urlInput.value.trim()) {
+                decodeURL();
+            } else {
+                textOutput.value = '';
+                hideError();
+            }
+        });
+
+        // Re-encode/decode when radio buttons change
+        document.querySelectorAll('input[name="encodeType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (textInput.value) {
+                    encodeText();
+                }
+            });
+        });
+
+        document.querySelectorAll('input[name="decodeType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (urlInput.value.trim()) {
+                    decodeURL();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
