@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder - Web Tools</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .tool-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .tool-header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-area {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .converter-section {
+            margin-bottom: 2rem;
+        }
+        
+        .converter-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .file-input {
+            margin-bottom: 1rem;
+        }
+        
+        .file-input input[type="file"] {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-container">
+        <a href="../index.html" class="back-link">← Back to Tools</a>
+        
+        <div class="tool-header">
+            <h1>Base64 Encoder/Decoder</h1>
+            <p>Encode and decode Base64 strings</p>
+        </div>
+        
+        <div class="tool-area">
+            <div class="error" id="errorMessage"></div>
+            
+            <div class="converter-section">
+                <h3>Text to Base64</h3>
+                <textarea id="textInput" placeholder="Enter text to encode..."></textarea>
+                <div class="controls">
+                    <button onclick="encodeText()">Encode to Base64</button>
+                    <button onclick="clearText()">Clear</button>
+                </div>
+                <textarea id="base64Output" readonly placeholder="Base64 encoded result will appear here..."></textarea>
+            </div>
+            
+            <div class="converter-section">
+                <h3>Base64 to Text</h3>
+                <textarea id="base64Input" placeholder="Enter Base64 string to decode..."></textarea>
+                <div class="controls">
+                    <button onclick="decodeBase64()">Decode from Base64</button>
+                    <button onclick="clearBase64()">Clear</button>
+                </div>
+                <textarea id="textOutput" readonly placeholder="Decoded text will appear here..."></textarea>
+            </div>
+            
+            <div class="converter-section">
+                <h3>File to Base64</h3>
+                <div class="file-input">
+                    <input type="file" id="fileInput" accept="*/*">
+                </div>
+                <div class="controls">
+                    <button onclick="encodeFile()">Encode File to Base64</button>
+                    <button onclick="clearFile()">Clear</button>
+                </div>
+                <textarea id="fileBase64Output" readonly placeholder="Base64 encoded file will appear here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const base64Output = document.getElementById('base64Output');
+        const base64Input = document.getElementById('base64Input');
+        const textOutput = document.getElementById('textOutput');
+        const fileInput = document.getElementById('fileInput');
+        const fileBase64Output = document.getElementById('fileBase64Output');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function encodeText() {
+            hideError();
+            try {
+                const text = textInput.value;
+                if (!text) {
+                    showError('Please enter text to encode');
+                    return;
+                }
+                
+                const encoded = btoa(unescape(encodeURIComponent(text)));
+                base64Output.value = encoded;
+            } catch (e) {
+                showError('Error encoding text: ' + e.message);
+            }
+        }
+
+        function decodeBase64() {
+            hideError();
+            try {
+                const base64 = base64Input.value.trim();
+                if (!base64) {
+                    showError('Please enter Base64 string to decode');
+                    return;
+                }
+                
+                const decoded = decodeURIComponent(escape(atob(base64)));
+                textOutput.value = decoded;
+            } catch (e) {
+                showError('Error decoding Base64: Invalid Base64 string');
+            }
+        }
+
+        function encodeFile() {
+            hideError();
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Please select a file to encode');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const base64 = e.target.result.split(',')[1];
+                    fileBase64Output.value = base64;
+                } catch (error) {
+                    showError('Error encoding file: ' + error.message);
+                }
+            };
+            reader.onerror = function() {
+                showError('Error reading file');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearText() {
+            textInput.value = '';
+            base64Output.value = '';
+            hideError();
+        }
+
+        function clearBase64() {
+            base64Input.value = '';
+            textOutput.value = '';
+            hideError();
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            fileBase64Output.value = '';
+            hideError();
+        }
+
+        // Auto-encode/decode on input
+        textInput.addEventListener('input', function() {
+            if (textInput.value) {
+                encodeText();
+            } else {
+                base64Output.value = '';
+                hideError();
+            }
+        });
+
+        base64Input.addEventListener('input', function() {
+            if (base64Input.value.trim()) {
+                decodeBase64();
+            } else {
+                textOutput.value = '';
+                hideError();
+            }
+        });
+    </script>
+</body>
+</html>

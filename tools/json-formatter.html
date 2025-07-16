@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter - Web Tools</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .tool-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .tool-header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-area {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .json-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .json-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .json-section h3 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .json-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-container">
+        <a href="../index.html" class="back-link">← Back to Tools</a>
+        
+        <div class="tool-header">
+            <h1>JSON Formatter</h1>
+            <p>Format, validate, and minify JSON data</p>
+        </div>
+        
+        <div class="tool-area">
+            <div class="controls">
+                <button onclick="formatJson()">Format JSON</button>
+                <button onclick="minifyJson()">Minify JSON</button>
+                <button onclick="validateJson()">Validate JSON</button>
+                <button onclick="clearAll()">Clear All</button>
+            </div>
+            
+            <div class="error" id="errorMessage"></div>
+            
+            <div class="json-grid">
+                <div class="json-section">
+                    <h3>Input JSON</h3>
+                    <textarea id="inputJson" placeholder="Paste your JSON here..."></textarea>
+                </div>
+                
+                <div class="json-section">
+                    <h3>Formatted JSON</h3>
+                    <textarea id="outputJson" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputJson = document.getElementById('inputJson');
+        const outputJson = document.getElementById('outputJson');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function formatJson() {
+            hideError();
+            try {
+                const input = inputJson.value.trim();
+                if (!input) {
+                    showError('Please enter some JSON to format');
+                    return;
+                }
+                
+                const parsed = JSON.parse(input);
+                const formatted = JSON.stringify(parsed, null, 2);
+                outputJson.value = formatted;
+            } catch (e) {
+                showError('Invalid JSON: ' + e.message);
+                outputJson.value = '';
+            }
+        }
+
+        function minifyJson() {
+            hideError();
+            try {
+                const input = inputJson.value.trim();
+                if (!input) {
+                    showError('Please enter some JSON to minify');
+                    return;
+                }
+                
+                const parsed = JSON.parse(input);
+                const minified = JSON.stringify(parsed);
+                outputJson.value = minified;
+            } catch (e) {
+                showError('Invalid JSON: ' + e.message);
+                outputJson.value = '';
+            }
+        }
+
+        function validateJson() {
+            hideError();
+            try {
+                const input = inputJson.value.trim();
+                if (!input) {
+                    showError('Please enter some JSON to validate');
+                    return;
+                }
+                
+                JSON.parse(input);
+                outputJson.value = 'Valid JSON ✓';
+            } catch (e) {
+                showError('Invalid JSON: ' + e.message);
+                outputJson.value = '';
+            }
+        }
+
+        function clearAll() {
+            inputJson.value = '';
+            outputJson.value = '';
+            hideError();
+        }
+
+        // Auto-format on input change
+        inputJson.addEventListener('input', function() {
+            if (inputJson.value.trim()) {
+                formatJson();
+            } else {
+                outputJson.value = '';
+                hideError();
+            }
+        });
+    </script>
+</body>
+</html>
