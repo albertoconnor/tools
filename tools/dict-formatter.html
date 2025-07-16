@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Dictionary Pretty Printer - Web Tools</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .tool-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .tool-header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-area {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .example {
+            background-color: #e8f5e8;
+            border: 1px solid #c8e6c9;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .example h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: #2e7d32;
+        }
+        
+        .example code {
+            background-color: #f1f8e9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .converter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .converter-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .converter-section h3 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .converter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-container">
+        <a href="../index.html" class="back-link">← Back to Tools</a>
+        
+        <div class="tool-header">
+            <h1>Python Dictionary Pretty Printer</h1>
+            <p>Format and prettify Python dictionaries for better readability</p>
+        </div>
+        
+        <div class="tool-area">
+            <div class="example">
+                <h3>Example Usage:</h3>
+                <p>Enter a minified Python dictionary like: <code>{'name':'John','age':30,'city':'New York','active':True}</code></p>
+                <p>Or complex nested structure: <code>{'users':[{'id':1,'name':'Alice','skills':['Python','JS']},{'id':2,'name':'Bob'}],'total':2}</code></p>
+            </div>
+            
+            <div class="controls">
+                <button onclick="formatDict()">Format Dictionary</button>
+                <button onclick="clearAll()">Clear All</button>
+            </div>
+            
+            <div class="error" id="errorMessage"></div>
+            
+            <div class="converter-grid">
+                <div class="converter-section">
+                    <h3>Python Dictionary</h3>
+                    <textarea id="pythonInput" placeholder="Enter your Python dictionary here...
+Example: {'name':'John','age':30,'active':True,'skills':['Python','JavaScript'],'data':{'city':'NYC','country':'USA'}}"></textarea>
+                </div>
+                
+                <div class="converter-section">
+                    <h3>Formatted Dictionary</h3>
+                    <textarea id="dictOutput" readonly placeholder="Formatted Python dictionary will appear here..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pythonInput = document.getElementById('pythonInput');
+        const dictOutput = document.getElementById('dictOutput');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function formatDict() {
+            hideError();
+            try {
+                const input = pythonInput.value.trim();
+                if (!input) {
+                    showError('Please enter a Python dictionary');
+                    return;
+                }
+                
+                // Convert Python dictionary syntax to JSON for parsing
+                let jsonString = input;
+                
+                // Replace Python boolean values with JSON boolean values
+                jsonString = jsonString.replace(/\bTrue\b/g, 'true');
+                jsonString = jsonString.replace(/\bFalse\b/g, 'false');
+                jsonString = jsonString.replace(/\bNone\b/g, 'null');
+                
+                // Replace single quotes with double quotes
+                jsonString = jsonString.replace(/'/g, '"');
+                
+                // Remove trailing commas
+                jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+                
+                // Parse the JSON
+                const parsedObj = JSON.parse(jsonString);
+                
+                // Format as Python dictionary
+                dictOutput.value = formatPythonDict(parsedObj, 0);
+                
+            } catch (error) {
+                showError('Error parsing Python dictionary: ' + error.message + 
+                         '\n\nMake sure your input is a valid Python dictionary format.');
+                dictOutput.value = '';
+            }
+        }
+
+        function formatPythonDict(obj, indent = 0) {
+            const spaces = '    '.repeat(indent);
+            const nextSpaces = '    '.repeat(indent + 1);
+            
+            if (obj === null) return 'None';
+            if (typeof obj === 'boolean') return obj ? 'True' : 'False';
+            if (typeof obj === 'string') return `'${obj}'`;
+            if (typeof obj === 'number') return obj.toString();
+            
+            if (Array.isArray(obj)) {
+                if (obj.length === 0) return '[]';
+                if (obj.length === 1) return `[${formatPythonDict(obj[0], 0)}]`;
+                
+                const items = obj.map(item => nextSpaces + formatPythonDict(item, indent + 1)).join(',\n');
+                return `[\n${items}\n${spaces}]`;
+            }
+            
+            if (typeof obj === 'object') {
+                const keys = Object.keys(obj);
+                if (keys.length === 0) return '{}';
+                if (keys.length === 1) {
+                    const key = keys[0];
+                    return `{'${key}': ${formatPythonDict(obj[key], 0)}}`;
+                }
+                
+                const items = keys.map(key => 
+                    nextSpaces + `'${key}': ${formatPythonDict(obj[key], indent + 1)}`
+                ).join(',\n');
+                return `{\n${items}\n${spaces}}`;
+            }
+            
+            return String(obj);
+        }
+
+        function clearAll() {
+            pythonInput.value = '';
+            dictOutput.value = '';
+            hideError();
+        }
+        
+        // Auto-convert on input change (with debounce)
+        let timeoutId;
+        pythonInput.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            if (pythonInput.value.trim()) {
+                timeoutId = setTimeout(formatDict, 500);
+            } else {
+                dictOutput.value = '';
+                hideError();
+            }
+        });
+    </script>
+</body>
+</html>
