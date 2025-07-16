@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone Converter - Web Tools</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .tool-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .tool-header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-area {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .converter-section {
+            margin-bottom: 2rem;
+        }
+        
+        .converter-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        input[type="datetime-local"], select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 1rem;
+        }
+        
+        .timezone-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 1rem;
+        }
+        
+        .timezone-row > div {
+            flex: 1;
+        }
+        
+        .result-area {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            margin-bottom: 1rem;
+        }
+        
+        .result-time {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-details {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .current-time {
+            background: #e8f5e8;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .quick-actions button {
+            padding: 0.25rem 0.5rem;
+            font-size: 12px;
+            background: #95a5a6;
+        }
+        
+        .quick-actions button:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-container">
+        <a href="../index.html" class="back-link">← Back to Tools</a>
+        
+        <div class="tool-header">
+            <h1>Timezone Converter</h1>
+            <p>Convert times between timezones with defaults to current/EST → UTC</p>
+        </div>
+        
+        <div class="tool-area">
+            <div class="error" id="errorMessage"></div>
+            
+            <div class="current-time" id="currentTime"></div>
+            
+            <div class="converter-section">
+                <h3>Convert Time</h3>
+                
+                <div class="input-group">
+                    <label for="dateTimeInput">Date & Time:</label>
+                    <input type="datetime-local" id="dateTimeInput">
+                    <div class="quick-actions">
+                        <button onclick="setToNow()">Now</button>
+                        <button onclick="setToStartOfDay()">Start of Day</button>
+                        <button onclick="setToEndOfDay()">End of Day</button>
+                    </div>
+                </div>
+                
+                <div class="timezone-row">
+                    <div>
+                        <label for="fromTimezone">From Timezone:</label>
+                        <select id="fromTimezone">
+                            <option value="auto" selected>Auto-detect Current Timezone</option>
+                            <option value="America/New_York">Eastern Time (EST/EDT)</option>
+                            <option value="America/Chicago">Central Time (CST/CDT)</option>
+                            <option value="America/Denver">Mountain Time (MST/MDT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PST/PDT)</option>
+                            <option value="UTC">UTC</option>
+                            <option value="Europe/London">London (GMT/BST)</option>
+                            <option value="Europe/Paris">Paris (CET/CEST)</option>
+                            <option value="Asia/Tokyo">Tokyo (JST)</option>
+                            <option value="Asia/Shanghai">Shanghai (CST)</option>
+                            <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="toTimezone">To Timezone:</label>
+                        <select id="toTimezone">
+                            <option value="UTC" selected>UTC</option>
+                            <option value="America/New_York">Eastern Time (EST/EDT)</option>
+                            <option value="America/Chicago">Central Time (CST/CDT)</option>
+                            <option value="America/Denver">Mountain Time (MST/MDT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PST/PDT)</option>
+                            <option value="Europe/London">London (GMT/BST)</option>
+                            <option value="Europe/Paris">Paris (CET/CEST)</option>
+                            <option value="Asia/Tokyo">Tokyo (JST)</option>
+                            <option value="Asia/Shanghai">Shanghai (CST)</option>
+                            <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button onclick="convertTime()">Convert</button>
+                    <button onclick="swapTimezones()">Swap Timezones</button>
+                    <button onclick="resetToDefaults()">Reset to Defaults</button>
+                </div>
+                
+                <div class="result-area" id="resultArea" style="display: none;">
+                    <div class="result-time" id="resultTime"></div>
+                    <div class="result-details" id="resultDetails"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dateTimeInput = document.getElementById('dateTimeInput');
+        const fromTimezone = document.getElementById('fromTimezone');
+        const toTimezone = document.getElementById('toTimezone');
+        const resultArea = document.getElementById('resultArea');
+        const resultTime = document.getElementById('resultTime');
+        const resultDetails = document.getElementById('resultDetails');
+        const errorMessage = document.getElementById('errorMessage');
+        const currentTime = document.getElementById('currentTime');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const localTime = now.toLocaleString('en-US', { 
+                timeZone: userTimezone,
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            });
+            currentTime.textContent = `Current time: ${localTime}`;
+        }
+
+        function setToNow() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+            dateTimeInput.value = localISOTime;
+            convertTime();
+        }
+
+        function setToStartOfDay() {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+            dateTimeInput.value = localISOTime;
+            convertTime();
+        }
+
+        function setToEndOfDay() {
+            const now = new Date();
+            now.setHours(23, 59, 59, 999);
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+            dateTimeInput.value = localISOTime;
+            convertTime();
+        }
+
+        function convertTime() {
+            hideError();
+            
+            if (!dateTimeInput.value) {
+                showError('Please select a date and time');
+                return;
+            }
+
+            try {
+                // Get the actual timezone to use for conversion
+                const sourceTimezone = getActualTimezone(fromTimezone.value);
+                const targetTimezone = getActualTimezone(toTimezone.value);
+
+                // Parse the datetime-local input as if it's in the source timezone
+                const [datePart, timePart] = dateTimeInput.value.split('T');
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour, minute] = timePart.split(':').map(Number);
+                
+                // Create a date object in the source timezone
+                const inputDate = new Date();
+                inputDate.setFullYear(year, month - 1, day);
+                inputDate.setHours(hour, minute, 0, 0);
+                
+                // Adjust for timezone offset
+                const tempDate = new Date(inputDate.toLocaleString('en-US', {timeZone: sourceTimezone}));
+                const offset = inputDate.getTime() - tempDate.getTime();
+                const sourceDate = new Date(inputDate.getTime() + offset);
+                
+                // Format the input time in the source timezone
+                const sourceTime = sourceDate.toLocaleString('en-US', {
+                    timeZone: sourceTimezone,
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                });
+
+                // Convert to target timezone
+                const targetTime = sourceDate.toLocaleString('en-US', {
+                    timeZone: targetTimezone,
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                });
+
+                // Show results
+                resultTime.textContent = targetTime;
+                resultDetails.innerHTML = `
+                    <strong>From:</strong> ${sourceTime}<br>
+                    <strong>To:</strong> ${targetTime}<br>
+                    <strong>ISO String:</strong> ${sourceDate.toISOString()}<br>
+                    <strong>Unix Timestamp:</strong> ${Math.floor(sourceDate.getTime() / 1000)}
+                `;
+                resultArea.style.display = 'block';
+
+            } catch (error) {
+                showError('Error converting time: ' + error.message);
+            }
+        }
+
+        function getActualTimezone(timezoneValue) {
+            if (timezoneValue === 'auto') {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone;
+            }
+            return timezoneValue;
+        }
+
+        function swapTimezones() {
+            const temp = fromTimezone.value;
+            fromTimezone.value = toTimezone.value;
+            toTimezone.value = temp;
+            
+            if (dateTimeInput.value) {
+                convertTime();
+            }
+        }
+
+        function resetToDefaults() {
+            // Set from timezone to auto-detect (which defaults to current or EST)
+            fromTimezone.value = 'auto';
+            toTimezone.value = 'UTC';
+            setToNow();
+        }
+
+        // Initialize on page load
+        function initialize() {
+            updateCurrentTime();
+            resetToDefaults();
+            
+            // Update current time every second
+            setInterval(updateCurrentTime, 1000);
+        }
+
+        // Auto-convert when inputs change
+        dateTimeInput.addEventListener('change', convertTime);
+        fromTimezone.addEventListener('change', convertTime);
+        toTimezone.addEventListener('change', convertTime);
+
+        // Initialize the page
+        initialize();
+    </script>
+</body>
+</html>
