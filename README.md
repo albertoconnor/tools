@@ -4,7 +4,7 @@ A collection of simple, browser-based JavaScript utilities inspired by [tools.si
 
 ## Live Demo
 
-Visit the tools at: [https://albertoconnor.github.io/tools/](https://YOUR_USERNAME.github.io/tools/)
+Visit the tools at: [https://albertoconnor.github.io/tools/](https://albertoconnor.github.io/tools/)
 
 ## Available Tools
 
