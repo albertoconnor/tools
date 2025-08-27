@@ -130,8 +130,8 @@
         <a href="../index.html" class="back-link">← Back to Tools</a>
         
         <div class="tool-header">
-            <h1>Python Dictionary Pretty Printer</h1>
-            <p>Format and prettify Python dictionaries for better readability</p>
+            <h1>Python Dictionary & Repr Pretty Printer</h1>
+            <p>Format and prettify Python dictionaries and repr output for better readability</p>
         </div>
         
         <div class="tool-area">
@@ -139,6 +139,7 @@
                 <h3>Example Usage:</h3>
                 <p>Enter a minified Python dictionary like: <code>{'name':'John','age':30,'city':'New York','active':True}</code></p>
                 <p>Or complex nested structure: <code>{'users':[{'id':1,'name':'Alice','skills':['Python','JS']},{'id':2,'name':'Bob'}],'total':2}</code></p>
+                <p>Or Python repr output with objects: <code>{'key': ActiveLabelData(active_label_id=289, value='SpecifiedEntitiesCommentsValue', value_type=&lt;ActiveLabelValueType.OVERRIDE: 'OVERRIDE'&gt;)}</code></p>
             </div>
             
             <div class="controls">
@@ -150,14 +151,15 @@
             
             <div class="converter-grid">
                 <div class="converter-section">
-                    <h3>Python Dictionary</h3>
-                    <textarea id="pythonInput" placeholder="Enter your Python dictionary here...
-Example: {'name':'John','age':30,'active':True,'skills':['Python','JavaScript'],'data':{'city':'NYC','country':'USA'}}"></textarea>
+                    <h3>Python Dictionary/Repr</h3>
+                    <textarea id="pythonInput" placeholder="Enter your Python dictionary or repr output here...
+Example: {'name':'John','age':30,'active':True,'skills':['Python','JavaScript'],'data':{'city':'NYC','country':'USA'}}
+Or repr: {'key': ActiveLabelData(active_label_id=289, value='test', value_type=<ActiveLabelValueType.OVERRIDE: 'OVERRIDE'>)}"></textarea>
                 </div>
                 
                 <div class="converter-section">
-                    <h3>Formatted Dictionary</h3>
-                    <textarea id="dictOutput" readonly placeholder="Formatted Python dictionary will appear here..."></textarea>
+                    <h3>Formatted Output</h3>
+                    <textarea id="dictOutput" readonly placeholder="Formatted Python dictionary/repr will appear here..."></textarea>
                 </div>
             </div>
         </div>
@@ -177,74 +179,344 @@ Example: {'name':'John','age':30,'active':True,'skills':['Python','JavaScript'],
             errorMessage.style.display = 'none';
         }
 
+        class PythonReprParser {
+            constructor(text) {
+                this.text = text;
+                this.pos = 0;
+                this.length = text.length;
+            }
+
+            skipWhitespace() {
+                while (this.pos < this.length && /\s/.test(this.text[this.pos])) {
+                    this.pos++;
+                }
+            }
+
+            peek() {
+                return this.pos < this.length ? this.text[this.pos] : null;
+            }
+
+            advance() {
+                if (this.pos < this.length) {
+                    return this.text[this.pos++];
+                }
+                return null;
+            }
+
+            parseString() {
+                const quote = this.advance(); // ' or "
+                let value = '';
+                let escaped = false;
+                
+                while (this.pos < this.length) {
+                    const char = this.advance();
+                    if (escaped) {
+                        value += char;
+                        escaped = false;
+                    } else if (char === '\\') {
+                        escaped = true;
+                        value += char;
+                    } else if (char === quote) {
+                        return { type: 'string', value: value };
+                    } else {
+                        value += char;
+                    }
+                }
+                throw new Error('Unterminated string');
+            }
+
+            parseNumber() {
+                let value = '';
+                while (this.pos < this.length && /[0-9.-]/.test(this.text[this.pos])) {
+                    value += this.advance();
+                }
+                return { type: 'number', value: parseFloat(value) };
+            }
+
+            parseIdentifier() {
+                let value = '';
+                while (this.pos < this.length && /[a-zA-Z0-9_.:<>]/.test(this.text[this.pos])) {
+                    value += this.advance();
+                }
+                
+                // Handle special Python values
+                if (value === 'True') return { type: 'boolean', value: true };
+                if (value === 'False') return { type: 'boolean', value: false };
+                if (value === 'None') return { type: 'none', value: null };
+                
+                // Check if it's an enum value like <ActiveLabelValueType.OVERRIDE: 'OVERRIDE'>
+                if (value.startsWith('<') && value.includes(':')) {
+                    // Parse the full enum including the closing >
+                    while (this.pos < this.length && this.text[this.pos] !== '>') {
+                        value += this.advance();
+                    }
+                    if (this.peek() === '>') {
+                        value += this.advance();
+                    }
+                    return { type: 'enum', value: value };
+                }
+                
+                return { type: 'identifier', value: value };
+            }
+
+            parseObject() {
+                const name = this.parseIdentifier().value;
+                this.skipWhitespace();
+                
+                if (this.peek() !== '(') {
+                    throw new Error('Expected ( after object name');
+                }
+                this.advance(); // consume (
+                
+                const params = [];
+                this.skipWhitespace();
+                
+                while (this.peek() !== ')' && this.pos < this.length) {
+                    // Parse parameter name
+                    const paramName = this.parseIdentifier().value;
+                    this.skipWhitespace();
+                    
+                    if (this.peek() === '=') {
+                        this.advance(); // consume =
+                        this.skipWhitespace();
+                        const value = this.parseValue();
+                        params.push({ name: paramName, value: value });
+                    } else {
+                        // Positional parameter
+                        params.push({ name: null, value: { type: 'identifier', value: paramName } });
+                    }
+                    
+                    this.skipWhitespace();
+                    if (this.peek() === ',') {
+                        this.advance();
+                        this.skipWhitespace();
+                    }
+                }
+                
+                if (this.peek() === ')') {
+                    this.advance();
+                }
+                
+                return { type: 'object', name: name, params: params };
+            }
+
+            parseDict() {
+                this.advance(); // consume {
+                const items = [];
+                this.skipWhitespace();
+                
+                while (this.peek() !== '}' && this.pos < this.length) {
+                    const key = this.parseValue();
+                    this.skipWhitespace();
+                    
+                    if (this.peek() !== ':') {
+                        throw new Error('Expected : after dictionary key');
+                    }
+                    this.advance();
+                    this.skipWhitespace();
+                    
+                    const value = this.parseValue();
+                    items.push({ key: key, value: value });
+                    
+                    this.skipWhitespace();
+                    if (this.peek() === ',') {
+                        this.advance();
+                        this.skipWhitespace();
+                    }
+                }
+                
+                if (this.peek() === '}') {
+                    this.advance();
+                }
+                
+                return { type: 'dict', items: items };
+            }
+
+            parseList() {
+                this.advance(); // consume [
+                const items = [];
+                this.skipWhitespace();
+                
+                while (this.peek() !== ']' && this.pos < this.length) {
+                    items.push(this.parseValue());
+                    this.skipWhitespace();
+                    
+                    if (this.peek() === ',') {
+                        this.advance();
+                        this.skipWhitespace();
+                    }
+                }
+                
+                if (this.peek() === ']') {
+                    this.advance();
+                }
+                
+                return { type: 'list', items: items };
+            }
+
+            parseValue() {
+                this.skipWhitespace();
+                const char = this.peek();
+                
+                if (char === null) {
+                    throw new Error('Unexpected end of input');
+                }
+                
+                if (char === '\'' || char === '"') {
+                    return this.parseString();
+                } else if (/[0-9-]/.test(char)) {
+                    return this.parseNumber();
+                } else if (char === '{') {
+                    return this.parseDict();
+                } else if (char === '[') {
+                    return this.parseList();
+                } else if (char === '<') {
+                    return this.parseIdentifier(); // Enum value
+                } else if (/[a-zA-Z_]/.test(char)) {
+                    // Could be an identifier, boolean, None, or object constructor
+                    const savedPos = this.pos;
+                    const identifier = this.parseIdentifier();
+                    
+                    if (identifier.type === 'identifier') {
+                        this.skipWhitespace();
+                        if (this.peek() === '(') {
+                            // Reset position and parse as object
+                            this.pos = savedPos;
+                            return this.parseObject();
+                        }
+                    }
+                    
+                    return identifier;
+                } else {
+                    throw new Error(`Unexpected character: ${char}`);
+                }
+            }
+
+            parse() {
+                return this.parseValue();
+            }
+        }
+
+        function formatPythonRepr(obj, indent = 0) {
+            const spaces = '    '.repeat(indent);
+            const nextSpaces = '    '.repeat(indent + 1);
+            
+            switch (obj.type) {
+                case 'string':
+                    return `'${obj.value}'`;
+                case 'number':
+                    return obj.value.toString();
+                case 'boolean':
+                    return obj.value ? 'True' : 'False';
+                case 'none':
+                    return 'None';
+                case 'identifier':
+                    return obj.value;
+                case 'enum':
+                    return obj.value;
+                case 'object':
+                    if (obj.params.length === 0) {
+                        return `${obj.name}()`;
+                    }
+                    
+                    const paramStrs = obj.params.map(param => {
+                        const valueStr = formatPythonRepr(param.value, 0);
+                        return param.name ? `${param.name}=${valueStr}` : valueStr;
+                    });
+                    
+                    // Check if any parameter values are complex or if we have multiple params
+                    const hasComplexParams = obj.params.some(param => 
+                        param.value.type === 'object' || 
+                        param.value.type === 'list' || 
+                        param.value.type === 'dict'
+                    );
+                    
+                    const totalLength = paramStrs.join(', ').length;
+                    
+                    if (paramStrs.length === 1 && !hasComplexParams && totalLength < 40) {
+                        return `${obj.name}(${paramStrs[0]})`;
+                    }
+                    
+                    const paramLines = paramStrs.map(p => nextSpaces + p).join(',\n');
+                    return `${obj.name}(\n${paramLines}\n${spaces})`;
+                    
+                case 'list':
+                    if (obj.items.length === 0) {
+                        return '[]';
+                    }
+                    if (obj.items.length === 1) {
+                        const value = formatPythonRepr(obj.items[0], 0);
+                        // Check if the single item is complex - if so, use multi-line format
+                        const isComplexValue = obj.items[0].type === 'object' || 
+                                             obj.items[0].type === 'list' || 
+                                             obj.items[0].type === 'dict' ||
+                                             value.includes('\n') ||
+                                             value.length > 60;
+                        
+                        if (isComplexValue) {
+                            const formattedValue = formatPythonRepr(obj.items[0], indent + 1);
+                            return `[\n${nextSpaces}${formattedValue}\n${spaces}]`;
+                        } else {
+                            return `[${value}]`;
+                        }
+                    }
+                    
+                    const listItems = obj.items.map(item => 
+                        nextSpaces + formatPythonRepr(item, indent + 1)
+                    ).join(',\n');
+                    return `[\n${listItems}\n${spaces}]`;
+                    
+                case 'dict':
+                    if (obj.items.length === 0) {
+                        return '{}';
+                    }
+                    if (obj.items.length === 1) {
+                        const key = formatPythonRepr(obj.items[0].key, 0);
+                        const value = formatPythonRepr(obj.items[0].value, 0);
+                        // Check if the value is complex (object, list, or multi-line) - if so, use multi-line format
+                        const isComplexValue = obj.items[0].value.type === 'object' || 
+                                             obj.items[0].value.type === 'list' || 
+                                             value.includes('\n') ||
+                                             value.length > 60;
+                        
+                        if (isComplexValue) {
+                            const formattedValue = formatPythonRepr(obj.items[0].value, indent + 1);
+                            return `{\n${nextSpaces}${key}: ${formattedValue}\n${spaces}}`;
+                        } else {
+                            return `{${key}: ${value}}`;
+                        }
+                    }
+                    
+                    const dictItems = obj.items.map(item => {
+                        const key = formatPythonRepr(item.key, 0);
+                        const value = formatPythonRepr(item.value, indent + 1);
+                        return nextSpaces + `${key}: ${value}`;
+                    }).join(',\n');
+                    return `{\n${dictItems}\n${spaces}}`;
+                    
+                default:
+                    return String(obj.value || obj);
+            }
+        }
+
         function formatDict() {
             hideError();
             try {
                 const input = pythonInput.value.trim();
                 if (!input) {
-                    showError('Please enter a Python dictionary');
+                    showError('Please enter a Python dictionary or repr output');
                     return;
                 }
                 
-                // Convert Python dictionary syntax to JSON for parsing
-                let jsonString = input;
-                
-                // Replace Python boolean values with JSON boolean values
-                jsonString = jsonString.replace(/\bTrue\b/g, 'true');
-                jsonString = jsonString.replace(/\bFalse\b/g, 'false');
-                jsonString = jsonString.replace(/\bNone\b/g, 'null');
-                
-                // Replace single quotes with double quotes
-                jsonString = jsonString.replace(/'/g, '"');
-                
-                // Remove trailing commas
-                jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-                
-                // Parse the JSON
-                const parsedObj = JSON.parse(jsonString);
-                
-                // Format as Python dictionary
-                dictOutput.value = formatPythonDict(parsedObj, 0);
+                const parser = new PythonReprParser(input);
+                const parsed = parser.parse();
+                dictOutput.value = formatPythonRepr(parsed, 0);
                 
             } catch (error) {
-                showError('Error parsing Python dictionary: ' + error.message + 
-                         '\n\nMake sure your input is a valid Python dictionary format.');
+                showError('Error parsing Python input: ' + error.message + 
+                         '\n\nMake sure your input is valid Python dictionary or repr format.');
                 dictOutput.value = '';
             }
-        }
-
-        function formatPythonDict(obj, indent = 0) {
-            const spaces = '    '.repeat(indent);
-            const nextSpaces = '    '.repeat(indent + 1);
-            
-            if (obj === null) return 'None';
-            if (typeof obj === 'boolean') return obj ? 'True' : 'False';
-            if (typeof obj === 'string') return `'${obj}'`;
-            if (typeof obj === 'number') return obj.toString();
-            
-            if (Array.isArray(obj)) {
-                if (obj.length === 0) return '[]';
-                if (obj.length === 1) return `[${formatPythonDict(obj[0], 0)}]`;
-                
-                const items = obj.map(item => nextSpaces + formatPythonDict(item, indent + 1)).join(',\n');
-                return `[\n${items}\n${spaces}]`;
-            }
-            
-            if (typeof obj === 'object') {
-                const keys = Object.keys(obj);
-                if (keys.length === 0) return '{}';
-                if (keys.length === 1) {
-                    const key = keys[0];
-                    return `{'${key}': ${formatPythonDict(obj[key], 0)}}`;
-                }
-                
-                const items = keys.map(key => 
-                    nextSpaces + `'${key}': ${formatPythonDict(obj[key], indent + 1)}`
-                ).join(',\n');
-                return `{\n${items}\n${spaces}}`;
-            }
-            
-            return String(obj);
         }
 
         function clearAll() {
